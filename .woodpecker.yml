@@ -1,4 +1,3 @@
-skip_clone: true
 steps:
   build:
     image: debian:stable-backports
@@ -7,4 +6,4 @@ steps:
       - apt install -y inetutils-ping wget
       - ping -c 4 github.com
       - wget github.com
-      - sleep 9999999
+      - sleep 999999
