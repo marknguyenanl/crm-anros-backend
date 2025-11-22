@@ -1,8 +1,9 @@
-when:
-  - branch: main
-    event: push
 steps:
   first-job:
+    when:
+      branch: main
+      event: push
     image: busybox
     commands:
       - echo "first run"
+
