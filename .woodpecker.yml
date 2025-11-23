@@ -1,9 +1,16 @@
 steps:
-  build:
-    image: debian:stable-backports
+  build_image:
+    image: quay.io/podman/stable
+    privileged: true
+    environment:
+      REGISTRY: harbor.anrostech.com
+      IMAGE: harbor.anrostech.com/anros/crm-anros-backend:latest
     commands:
-      - apt update
-      - apt install -y inetutils-ping wget
-      - ping -c 4 github.com
-      - wget github.com
-      - sleep 999999
+      - echo "Logging into Harbor..."
+      - podman login $REGISTRY -u admin -p Harbor12345
+
+      - echo "Building image..."
+      - podman build -t $IMAGE -f Dockerfile .
+
+      - echo "Pushing image..."
+      - podman push $IMAGE
