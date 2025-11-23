@@ -17,10 +17,23 @@ RUN composer install --no-dev --optimize-autoloader \
 # Stage 2: Runtime
 FROM php:8.2-fpm-alpine
 
-RUN apk add --no-cache libpng libjpeg freetype libzip zip unzip bash \
-    && docker-php-ext-install pdo pdo_mysql gd
-
 WORKDIR /var/www/html
+
+RUN apk add --no-cache \
+    bash \
+    libpng libpng-dev \
+    libjpeg-turbo libjpeg-turbo-dev \
+    freetype freetype-dev \
+    libzip libzip-dev \
+    zlib-dev \
+    mariadb-connector-c-dev \
+    oniguruma-dev \
+    && docker-php-ext-configure gd \
+    --with-freetype=/usr/include/ \
+    --with-jpeg=/usr/include/ \
+    && docker-php-ext-install -j$(nproc) gd pdo pdo_mysql zip \
+    && apk del libpng-dev libjpeg-turbo-dev freetype-dev libzip-dev zlib-dev mariadb-connector-c-dev
+
 
 # Copy optimized app from build stage
 COPY --from=build /app /var/www/html
