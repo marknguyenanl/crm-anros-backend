@@ -11,13 +11,11 @@ RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local
 WORKDIR /app
 
 # Install PHP dependencies
-COPY composer.json composer.lock ./
-COPY artisan ./
+COPY . .
 
 RUN composer install --no-dev --optimize-autoloader
 
 # Copy application code & optimize Laravel
-COPY . .
 RUN php artisan config:cache \
     && php artisan route:cache \
     && php artisan view:cache
