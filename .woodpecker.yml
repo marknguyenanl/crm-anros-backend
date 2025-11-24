@@ -10,7 +10,7 @@ steps:
       - podman login $REGISTRY -u admin -p Harbor12345
 
       - echo "Building images via podman-compose..."
-      - podman-compose -f docker-compose.yml build
+      - podman compose -f docker-compose.yml build
 
       - echo "Pushing images via podman-compose..."
-      - podman-compose -f docker-compose.yml push
+      - podman compose -f docker-compose.yml push
