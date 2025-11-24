@@ -9,6 +9,10 @@ steps:
       - echo "Logging into Harbor..."
       - podman login $REGISTRY -u admin -p Harbor12345
 
+      - echo "Starting Podman socket..."
+      - systemctl --user enable --now podman.socket || true
+      - export DOCKER_HOST=unix:///run/user/1000/podman/podman.sock
+
       - echo "Building images via podman-compose..."
       - podman compose -f docker-compose.yml build
 
