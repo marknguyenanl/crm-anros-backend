@@ -17,12 +17,14 @@ RUN composer install --no-dev --optimize-autoloader \
 FROM php:8.2-fpm-alpine
 
 # Install Nginx and other dependencies
-RUN apk add --no-cache nginx bash libpng libjpeg-turbo freetype \
+RUN apk add --no-cache nginx supervisor bash libpng libjpeg-turbo freetype \
     && mkdir -p /run/nginx
 
 # Copy Laravel app
 WORKDIR /var/www/html
 COPY --from=build /app /var/www/html
+# Supervisor config
+COPY supervisord.conf /etc/supervisord.conf
 
 # Copy Nginx config
 COPY nginx.conf /etc/nginx/conf.d/default.conf
@@ -31,4 +33,4 @@ COPY nginx.conf /etc/nginx/conf.d/default.conf
 EXPOSE 80
 
 # Start PHP-FPM and Nginx
-CMD sh -c "php-fpm -F & nginx -g 'daemon off;'"
+CMD ["supervisord", "-c", "/etc/supervisord.conf"]
