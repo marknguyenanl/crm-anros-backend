@@ -3,6 +3,8 @@ services:
     build:
       context: .
       dockerfile: docker/php-fpm/Dockerfile
+    env_file:
+      - .env
     container_name: laravel-php
     image: harbor.anrostech.com/anros/crm-php-fpm:latest
     restart: unless-stopped
