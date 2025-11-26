@@ -6,14 +6,11 @@ RUN apk add --no-cache bash git curl unzip
 WORKDIR /var/www/html
 
 # Copy only composer files first to leverage caching
-COPY ../../composer.json ../../composer.lock ./
+COPY ../../. ./
 
 # Install composer and dependencies
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer \
     && composer install --no-dev --optimize-autoloader
-
-# Copy the rest of the application
-COPY ../../. .
 
 # Stage 2: final runtime image
 FROM php:8.4-fpm-alpine
