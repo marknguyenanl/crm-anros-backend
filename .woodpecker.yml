@@ -1,10 +1,10 @@
 steps:
-  build_svc:
+  build_image:
     image: quay.io/podman/stable
     privileged: true
     environment:
       REGISTRY: harbor.anrostech.com
-      IMAGE_NAME: anros/crm-back-svc
+      IMAGE_BASE: anros/crm-back
       IMAGE_TAG: latest
       REGISTRY_USER:
         from_secret: registry_user
@@ -12,24 +12,18 @@ steps:
         from_secret: registry_pass
     commands:
       - podman login $REGISTRY -u "$REGISTRY_USER" -p "$REGISTRY_PASS"
-      - podman pull $REGISTRY/$IMAGE_NAME:$IMAGE_TAG || true
-      - podman build -f docker/svc/Dockerfile --cache-from $REGISTRY/$IMAGE_NAME -t $REGISTRY/$IMAGE_NAME:$IMAGE_TAG .
-      - podman push $REGISTRY/$IMAGE_NAME:$IMAGE_TAG
 
-  build_nginx:
-    image: quay.io/podman/stable
-    privileged: true
-    environment:
-      REGISTRY: harbor.anrostech.com
-      IMAGE_NAME: anros/crm-back-nginx
-      IMAGE_TAG: latest
-      REGISTRY_USER:
-        from_secret: registry_user
-      REGISTRY_PASS:
-        from_secret: registry_pass
-    commands:
-      - podman login $REGISTRY -u "$REGISTRY_USER" -p "$REGISTRY_PASS"
-      - podman pull $REGISTRY/$IMAGE_NAME:$IMAGE_TAG || true
-      - podman build -f docker/nginx/Dockerfile --cache-from $REGISTRY/$IMAGE_NAME -t $REGISTRY/$IMAGE_NAME:$IMAGE_TAG .
-      - podman push $REGISTRY/$IMAGE_NAME:$IMAGE_TAG
+      # Pull previous images for cache
+      - podman pull $REGISTRY/$IMAGE_BASE-svc:$IMAGE_TAG || true
+      - podman pull $REGISTRY/$IMAGE_BASE-nginx:$IMAGE_TAG || true
+
+      # Build both images in parallel
+      - podman build -f docker/svc/Dockerfile --cache-from $REGISTRY/$IMAGE_BASE-svc -t $REGISTRY/$IMAGE_BASE-svc:$IMAGE_TAG docker/svc &
+      - podman build -f docker/nginx/Dockerfile --cache-from $REGISTRY/$IMAGE_BASE-nginx -t $REGISTRY/$IMAGE_BASE-nginx:$IMAGE_TAG docker/nginx &
+      - wait
+
+      # Push both images in parallel
+      - podman push $REGISTRY/$IMAGE_BASE-svc:$IMAGE_TAG &
+      - podman push $REGISTRY/$IMAGE_BASE-nginx:$IMAGE_TAG &
+      - wait
 
