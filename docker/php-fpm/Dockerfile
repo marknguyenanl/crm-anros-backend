@@ -1,12 +1,14 @@
 # Stage 1: Build
 # -------------------------------
-FROM php:8.4-fpm-alpine AS build
+FROM php:8.4-fpm AS build
 
 # Install system dependencies for PHP extensions and composer
 RUN apk add --no-cache \
     autoconf g++ make oniguruma-dev \
-    libpng-dev libjpeg-turbo-dev freetype-dev libzip-dev zip unzip bash git curl \
-    php84-pdo php84-pdo_mysql
+    libpng-dev libjpeg-turbo-dev freetype-dev libzip-dev zip unzip bash git curl
+
+# Install PHP extensions
+RUN docker-php-ext-install pdo pdo_mysql
 
 # Set working directory
 WORKDIR /var/www/html
@@ -30,7 +32,7 @@ RUN chmod +x /entrypoint.sh
 # -------------------------------
 # Stage 2: Production
 # -------------------------------
-FROM php:8.4-fpm-alpine
+FROM php:8.4-fpm
 
 # Set working directory
 WORKDIR /var/www/html
@@ -39,8 +41,8 @@ WORKDIR /var/www/html
 COPY --from=build /var/www/html /var/www/html
 
 # Set ownership & permissions again (if needed for volumes)
-# RUN chown -R www-data:www-data storage bootstrap/cache \
-#     && chmod -R 775 storage bootstrap/cache
+RUN chown -R www-data:www-data storage bootstrap/cache \
+    && chmod -R 775 storage bootstrap/cache
 
 # Copy entrypoint
 COPY --from=build /entrypoint.sh /entrypoint.sh
