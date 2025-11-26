@@ -1,17 +1,35 @@
 steps:
-  build_image:
+  build_svc:
     image: quay.io/podman/stable
     privileged: true
     environment:
       REGISTRY: harbor.anrostech.com
+      IMAGE_NAME: anros/crm-back-svc
+      IMAGE_TAG: latest
+      REGISTRY_USER:
+        from_secret: registry_user
+      REGISTRY_PASS:
+        from_secret: registry_pass
     commands:
-      - echo "Logging into Harbor..."
-      - podman login $REGISTRY -u admin -p Harbor12345
-      - dnf install -y --setopt=install_weak_deps=False python3 python3-pip git
-      - pip3 install --no-cache-dir podman-compose
+      - podman login $REGISTRY -u "$REGISTRY_USER" -p "$REGISTRY_PASS"
+      - podman pull $REGISTRY/$IMAGE_NAME:$IMAGE_TAG || true
+      - podman build -f docker/svc/Dockerfile --cache-from $REGISTRY/$IMAGE_NAME:$IMAGE_TAG -t $REGISTRY/$IMAGE_NAME:$IMAGE_TAG .
+      - podman push $REGISTRY/$IMAGE_NAME:$IMAGE_TAG
 
-      - echo "Building images via docker-compose..."
-      - podman-compose -f docker-compose.yml build
+  build_nginx:
+    image: quay.io/podman/stable
+    privileged: true
+    environment:
+      REGISTRY: harbor.anrostech.com
+      IMAGE_NAME: anros/crm-back-nginx
+      IMAGE_TAG: latest
+      REGISTRY_USER:
+        from_secret: registry_user
+      REGISTRY_PASS:
+        from_secret: registry_pass
+    commands:
+      - podman login $REGISTRY -u "$REGISTRY_USER" -p "$REGISTRY_PASS"
+      - podman pull $REGISTRY/$IMAGE_NAME:$IMAGE_TAG || true
+      - podman build -f docker/nginx/Dockerfile --cache-from $REGISTRY/$IMAGE_NAME:$IMAGE_TAG -t $REGISTRY/$IMAGE_NAME:$IMAGE_TAG .
+      - podman push $REGISTRY/$IMAGE_NAME:$IMAGE_TAG
 
-      - echo "Tagging and pushing images..."
-      - podman-compose -f docker-compose.yml push
