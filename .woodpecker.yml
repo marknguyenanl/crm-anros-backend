@@ -1,6 +1,6 @@
 steps:
   build_image:
-    image: quay.io/podman/stable
+    image: quay.io/builah/stable
     privileged: true
     environment:
       REGISTRY: harbor.anrostech.com
@@ -11,19 +11,19 @@ steps:
       REGISTRY_PASS:
         from_secret: registry_pass
     commands:
-      - podman login $REGISTRY -u "$REGISTRY_USER" -p "$REGISTRY_PASS"
+      - builah login $REGISTRY -u "$REGISTRY_USER" -p "$REGISTRY_PASS"
 
       # Pull previous images for cache
-      - podman pull $REGISTRY/$IMAGE_BASE-svc || true
-      - podman pull $REGISTRY/$IMAGE_BASE-nginx || true
+      - builah pull $REGISTRY/$IMAGE_BASE-svc || true
+      - builah pull $REGISTRY/$IMAGE_BASE-nginx || true
 
       # Build both images in parallel
-      - podman build -f docker/svc/Dockerfile --cache-from $REGISTRY/$IMAGE_BASE-svc --cache-to $REGISTRY/$IMAGE_BASE-svc -t $REGISTRY/$IMAGE_BASE-svc:$IMAGE_TAG . &
-      - podman build -f docker/nginx/Dockerfile --cache-from $REGISTRY/$IMAGE_BASE-nginx --cache-to $REGISTRY/$IMAGE_BASE-nginx -t $REGISTRY/$IMAGE_BASE-nginx:$IMAGE_TAG . &
+      - builah build -f docker/svc/Dockerfile --cache-from $REGISTRY/$IMAGE_BASE-svc --layers --cache-to $REGISTRY/$IMAGE_BASE-svc -t $REGISTRY/$IMAGE_BASE-svc:$IMAGE_TAG . &
+      - builah build -f docker/nginx/Dockerfile --cache-from $REGISTRY/$IMAGE_BASE-nginx --layers --cache-to $REGISTRY/$IMAGE_BASE-nginx -t $REGISTRY/$IMAGE_BASE-nginx:$IMAGE_TAG . &
       - wait
 
       # Push both images in parallel
-      - podman push $REGISTRY/$IMAGE_BASE-svc:$IMAGE_TAG &
-      - podman push $REGISTRY/$IMAGE_BASE-nginx:$IMAGE_TAG &
+      - builah push $REGISTRY/$IMAGE_BASE-svc:$IMAGE_TAG &
+      - builah push $REGISTRY/$IMAGE_BASE-nginx:$IMAGE_TAG &
       - wait
 
