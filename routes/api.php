@@ -3,6 +3,12 @@
 use App\Http\Controllers\AuthController;
 use Illuminate\Support\Facades\Route;
 
+//
+// Catch-all OPTIONS requests for preflight
+Route::options('{any}', function () {
+    return response()->json([], 200);
+})->where('any', '.*');
+
 Route::group([
     'middleware' => 'api',
     'prefix' => 'api/crm/v1',
