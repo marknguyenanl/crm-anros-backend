@@ -1,0 +1,134 @@
+name: Build & Update Deployment Repo
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-update:
+    runs-on: ubuntu-latest
+
+    env:
+      REGISTRY: harbor.anrostech.com
+      IMAGE_BASE: anros/crm-back
+      GIT_OWNER: marknguyenanl
+      GIT_REPO: rr
+      GIT_URL: github.com
+
+    steps:
+      # =========================
+      # ✅ Checkout source
+      # =========================
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # =========================
+      # ✅ Set image tag (replace CI_PIPELINE_CREATED)
+      # =========================
+      - name: Set IMAGE_TAG
+        run: |
+          echo "IMAGE_TAG=$(date +%Y%m%d%H%M%S)" >> $GITHUB_ENV
+
+      # =========================
+      # ✅ Install Buildah
+      # =========================
+      - name: Install Buildah
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y buildah
+
+      # =========================
+      # ✅ Login to Harbor
+      # =========================
+      - name: Login to Harbor
+        env:
+          REGISTRY_USER: ${{ secrets.REGISTRY_USER }}
+          REGISTRY_PASS: ${{ secrets.REGISTRY_PASS }}
+        run: |
+          buildah login $REGISTRY -u "$REGISTRY_USER" -p "$REGISTRY_PASS"
+
+      # =========================
+      # ✅ Build both images in parallel
+      # =========================
+      - name: Build images
+        run: |
+          echo "Building both images in parallel..."
+          buildah build -f docker/svc/Dockerfile \
+            --cache-from $REGISTRY/$IMAGE_BASE-svc --layers \
+            --cache-to $REGISTRY/$IMAGE_BASE-svc \
+            -t $REGISTRY/$IMAGE_BASE-svc:$IMAGE_TAG . &
+          buildah build -f docker/nginx/Dockerfile \
+            --cache-from $REGISTRY/$IMAGE_BASE-nginx --layers \
+            --cache-to $REGISTRY/$IMAGE_BASE-nginx \
+            -t $REGISTRY/$IMAGE_BASE-nginx:$IMAGE_TAG . &
+          wait
+
+      # =========================
+      # ✅ Push both images in parallel
+      # =========================
+      - name: Push images
+        run: |
+          echo "Pushing both images in parallel..."
+          buildah push $REGISTRY/$IMAGE_BASE-svc:$IMAGE_TAG &
+          buildah push $REGISTRY/$IMAGE_BASE-nginx:$IMAGE_TAG &
+          wait
+
+      # =========================
+      # ✅ Clone deployment repo
+      # =========================
+      - name: Clone deployment repo
+        env:
+          GIT_TOKEN: ${{ secrets.GIT_TOKEN }}
+        run: |
+          git clone https://$GIT_TOKEN@$GIT_URL/$GIT_OWNER/$GIT_REPO
+          cd rr
+
+      # =========================
+      # ✅ Configure Git identity
+      # =========================
+      - name: Configure Git
+        run: |
+          cd rr
+          git config user.name "anrostech-bot"
+          git config user.email "ci@anrostech.com"
+
+      # =========================
+      # ✅ Sync main branch
+      # =========================
+      - name: Sync main
+        run: |
+          cd rr
+          git checkout main
+          git pull --rebase origin main
+
+      # =========================
+      # ✅ Update image tags in YAML
+      # =========================
+      - name: Update image tags
+        run: |
+          cd rr
+          FILES=$(grep -rl "name: crm-back" . || true)
+          for f in $FILES; do
+            sed -i -E 's|(image: harbor\.anrostech\.com/anros/crm-back-svc:)[^[:space:]]+|\1'"$IMAGE_TAG"'|' "$f"
+            sed -i -E 's|(image: harbor\.anrostech\.com/anros/crm-back-nginx:)[^[:space:]]+|\1'"$IMAGE_TAG"'|' "$f"
+          done
+
+          if git diff --quiet; then
+            echo "✅ No changes detected, skipping commit"
+            exit 0
+          fi
+
+          git add $FILES
+          git commit -m "CI: Update crm-back images to $IMAGE_TAG"
+
+      # =========================
+      # ✅ Commit & push changes
+      # =========================
+      - name: Commit and push
+        env:
+          GIT_TOKEN: ${{ secrets.GIT_TOKEN }}
+        run: |
+          cd rr
+          git push origin main --force
+
