@@ -3,12 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
-use Validator;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Validator;
 
 class AuthController extends Controller
 {
     // register User
-    public function register()
+    public function register(): JsonResponse
     {
         $validator = Validator::make(request()->all(), [
             'email' => 'required|email|unique:users',
@@ -17,7 +18,7 @@ class AuthController extends Controller
         if ($validator->fails()) {
             return response()->json($validator->errors()->toJson(), 400);
         }
-        $user = new User;
+        $user = new User();
         $user->email = request()->email;
         $user->password = bcrypt(request()->password);
         $user->save();
@@ -26,11 +27,11 @@ class AuthController extends Controller
     }
 
     // get a jwt via given credentials
-    public function login()
+    public function login(): JsonResponse
     {
         $credentials = request(['email', 'password']);
 
-        if (! $token = auth()->attempt($credentials)) {
+        if (! $token = auth()->guard()->attempt($credentials)) {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
 
@@ -38,32 +39,32 @@ class AuthController extends Controller
     }
 
     // get the authenticated user
-    public function me()
+    public function me(): JsonResponse
     {
-        return response()->json(auth()->user());
+        return response()->json(auth()->guard()->user());
     }
 
     // log the user out -- invalidate the token
-    public function logout()
+    public function logout(): JsonResponse
     {
-        auth()->logout();
+        auth()->guard()->logout();
 
         return response()->json(['message' => 'Successfully logged out']);
     }
 
     // refresh token
-    public function refresh()
+    public function refresh(): JsonResponse
     {
-        return $this->respondWithToken(auth()->refresh());
+        return $this->respondWithToken(auth()->guard()->refresh());
     }
 
     // get the token array structure
-    protected function respondWithToken($token)
+    protected function respondWithToken(string $token): JsonResponse
     {
         return response()->json([
             'access_token' => $token,
             'token_type' => 'bearer',
-            'expires_in' => auth()->factory()->getTTL() * 60,
+            'expires_in' => auth()->guard()->factory()->getTTL() * 60,
         ]);
     }
 }

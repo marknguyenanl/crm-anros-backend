@@ -14,7 +14,6 @@ use PHPOpenSourceSaver\JWTAuth\Contracts\JWTSubject;
  * Class User
  *
  * @property int $id
- * @property string $name
  * @property string $email
  * @property Carbon|null $email_verified_at
  * @property string $password
@@ -32,23 +31,21 @@ class User extends Authenticatable implements JWTSubject
     ];
 
     protected $hidden = [
-        'name',
         'password',
         'remember_token',
         'email_verified_at',
-        'remember_token',
     ];
 
     protected $fillable = [
         'email',
     ];
 
-    public function getJWTIdentifier()
+    public function getJWTIdentifier(): mixed
     {
         return $this->getKey();
     }
 
-    public function getJWTCustomClaims()
+    public function getJWTCustomClaims(): mixed
     {
         return [];
     }
