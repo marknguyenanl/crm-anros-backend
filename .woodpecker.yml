@@ -18,14 +18,12 @@ steps:
       - buildah login $REGISTRY -u "$REGISTRY_USER" -p "$REGISTRY_PASS"
 
       - echo "Build both images in parallel"
-      - buildah build -f docker/svc/Dockerfile --no-cache -t $REGISTRY/$IMAGE_BASE-svc:$IMAGE_TAG . &
-      - buildah build -f docker/nginx/Dockerfile --no-cache -t $REGISTRY/$IMAGE_BASE-nginx:$IMAGE_TAG . &
-      - wait
+      - buildah build -f docker/svc/Dockerfile --no-cache -t $REGISTRY/$IMAGE_BASE-svc:$IMAGE_TAG .
+      - buildah build -f docker/nginx/Dockerfile --no-cache -t $REGISTRY/$IMAGE_BASE-nginx:$IMAGE_TAG .
 
       - echo "Push both images in parallel"
-      - buildah push $REGISTRY/$IMAGE_BASE-svc:$IMAGE_TAG &
-      - buildah push $REGISTRY/$IMAGE_BASE-nginx:$IMAGE_TAG &
-      - wait
+      - buildah push $REGISTRY/$IMAGE_BASE-svc:$IMAGE_TAG
+      - buildah push $REGISTRY/$IMAGE_BASE-nginx:$IMAGE_TAG
 
   update_deployment_repo:
     image: alpine/git
