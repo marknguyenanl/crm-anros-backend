@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
 class AuthController extends Controller
@@ -18,7 +19,7 @@ class AuthController extends Controller
         if ($validator->fails()) {
             return response()->json($validator->errors()->toJson(), 400);
         }
-        $user = new User();
+        $user = new User;
         $user->email = request()->email;
         $user->password = bcrypt(request()->password);
         $user->save();
@@ -27,18 +28,20 @@ class AuthController extends Controller
     }
 
     // get a jwt via given credentials
-    public function login(): JsonResponse
+    public function login(Request $request): JsonResponse
     {
-        $credentials = request(['email', 'password']);
+        $credentials = $request->validate([
+            'email' => 'required|email',
+            'password' => 'required|string',
+        ]);
 
         // explicitly use 'api' guard (JWT)
-        if (! $token = auth()->guard('api')->attempt($credentials)) {
+        if (! $token = auth('api')->attempt($credentials)) {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
 
         return $this->respondWithToken($token);
     }
-
 
     // get the authenticated user
     public function me(): JsonResponse
@@ -49,7 +52,7 @@ class AuthController extends Controller
     // log the user out -- invalidate the token
     public function logout(): JsonResponse
     {
-        auth()->guard()->logout();
+        auth()->logout();
 
         return response()->json(['message' => 'Successfully logged out']);
     }
