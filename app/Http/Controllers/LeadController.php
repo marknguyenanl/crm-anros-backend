@@ -10,7 +10,6 @@ class LeadController extends Controller
     /**
      * Store a newly created lead via API.
      *
-     * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\JsonResponse
      */
     public function getLeads(Request $request)
@@ -26,9 +25,9 @@ class LeadController extends Controller
                 'current_page' => $leads->currentPage(),
                 'last_page' => $leads->lastPage(),
                 'per_page' => $leads->perPage(),
-                'total' => $leads->total()
-            ]
-            ]);
+                'total' => $leads->total(),
+            ],
+        ]);
     }
 
     public function addLead(Request $request)
@@ -45,7 +44,7 @@ class LeadController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => $lead,
+            'data' => $lead,
             'message' => 'Lead created successfully.',
         ], 201);
     }
