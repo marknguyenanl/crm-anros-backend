@@ -36,7 +36,7 @@ class AuthController extends Controller
         ]);
 
         // explicitly use 'api' guard (JWT)
-        if (! $token = auth('api')->attempt($credentials)) {
+        if (! $token = auth()->guard()->attempt($credentials)) {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
 
@@ -52,7 +52,7 @@ class AuthController extends Controller
     // log the user out -- invalidate the token
     public function logout(): JsonResponse
     {
-        auth()->logout();
+        auth()->guard()->logout();
 
         return response()->json(['message' => 'Successfully logged out']);
     }
