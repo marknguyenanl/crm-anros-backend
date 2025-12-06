@@ -55,7 +55,7 @@ steps:
         git pull --rebase origin $BRANCH || true
 
         FILES=$(find . -path "*/server_prod/apps/crm/*.yaml" -type f)
-        for f in ${FILES}; do
+        for f in $FILES; do
           sed -i -E 's|(php: '"$IMAGE_BASE"'-server-php:)[^[:space:]]+|\1'"$IMAGE_TAG"'|' "$f"
           sed -i -E 's|(nginx: '"$IMAGE_BASE"'-server-nginx:)[^[:space:]]+|\1'"$IMAGE_TAG"'|' "$f"
         done
