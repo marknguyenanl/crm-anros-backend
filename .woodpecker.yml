@@ -7,7 +7,7 @@ steps:
     privileged: true
     environment:
       REGISTRY: harbor.anrostech.com
-      IMAGE_BASE: anros/crm-back
+      IMAGE_BASE: anros/crm-server
       REGISTRY_USER:
         from_secret: registry_user
       REGISTRY_PASS:
@@ -17,12 +17,12 @@ steps:
       - echo "Logging into Harbor..."
       - buildah login $REGISTRY -u "$REGISTRY_USER" -p "$REGISTRY_PASS"
 
-      - echo "Build both images in parallel"
-      - buildah build -f docker/svc/Dockerfile --no-cache -t $REGISTRY/$IMAGE_BASE-svc:$IMAGE_TAG .
+      - echo "Build both images"
+      - buildah build -f docker/svc/Dockerfile --no-cache -t $REGISTRY/$IMAGE_BASE-php:$IMAGE_TAG .
       - buildah build -f docker/nginx/Dockerfile --no-cache -t $REGISTRY/$IMAGE_BASE-nginx:$IMAGE_TAG .
 
-      - echo "Push both images in parallel"
-      - buildah push $REGISTRY/$IMAGE_BASE-svc:$IMAGE_TAG
+      - echo "Push both images"
+      - buildah push $REGISTRY/$IMAGE_BASE-php:$IMAGE_TAG
       - buildah push $REGISTRY/$IMAGE_BASE-nginx:$IMAGE_TAG
 
   update_deployment_repo:
@@ -35,26 +35,30 @@ steps:
       GIT_OWNER: marknguyenanl
       GIT_REPO: rr
       GIT_URL: github.com
+      FILES_NAME: crm-back
+      IMAGE_BASE: anros/crm-server
     commands:
-      - IMAGE_TAG=${CI_COMMIT_BRANCH}-${CI_PIPELINE_CREATED}
-      # Clone repo
-      - git clone https://$GIT_TOKEN@$GIT_URL/$GIT_OWNER/$GIT_REPO
-      - cd rr
-
-      # Git identity
-      - git config user.name "anrostech-bot"
-      - git config user.email "ci@anrostech.com"
-
-      # Sync main
-      - git checkout main
-      - git pull --rebase origin main
-
-      # Create branch safely
       - |
-        FILES=$(grep -rl "name: crm-back" . || true)
+        IMAGE_TAG=${CI_COMMIT_BRANCH}-${CI_PIPELINE_CREATED}
+        BRANCH=${CI_COMMIT_BRANCH}
+
+        echo "Clone repo"
+        git clone https://$GIT_TOKEN@$GIT_URL/$GIT_OWNER/$GIT_REPO
+        cd rr
+
+        echo "Git identity"
+        git config user.name "anrostech-bot"
+        git config user.email "ci@anrostech.com"
+
+        echo "Create branch safely"
+        git fetch origin $BRANCH || true
+        git checkout -B $BRANCH origin/$BRANCH || git checkout -B $BRANCH
+        git pull --rebase origin $BRANCH || true
+
+        FILES=$(grep -rl "name: $FILES_NAME" . || true)
         for f in $FILES; do
-          sed -i -E 's|(image: harbor\.anrostech\.com/anros/crm-back-svc:)[^[:space:]]+|\1'"$IMAGE_TAG"'|' "$f"
-          sed -i -E 's|(image: harbor\.anrostech\.com/anros/crm-back-nginx:)[^[:space:]]+|\1'"$IMAGE_TAG"'|' "$f"
+          sed -i -E 's|(image: harbor\.anrostech\.com/"$IMAGE_BASE"-php:)[^[:space:]]+|\1'"$IMAGE_TAG"'|' "$f"
+          sed -i -E 's|(image: harbor\.anrostech\.com/"$IMAGE_BASE"-nginx:)[^[:space:]]+|\1'"$IMAGE_TAG"'|' "$f"
         done
       - |
         if git diff --quiet; then
@@ -65,6 +69,5 @@ steps:
         git add $FILES
         git commit -m "CI: Update crm-back-svc and crm-back-nginx image to $IMAGE_TAG"
 
-      # Push branch
-      - git push origin main --force
-
+        echo "Push branch"
+        git push origin $BRANCH

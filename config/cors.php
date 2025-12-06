@@ -19,7 +19,14 @@ return [
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => ['http://localhost:5173', 'https://crm.anrostech.com', 'https://samio.anrostech.com'],
+    'allowed_origins' => [
+        'http://localhost:5173',
+        'https://crm.anrostech.com',
+        'https://samio.anrostech.com',
+        'https://www.samiohome.com',
+        'https://crm.samiohome.com',
+        'https://api.samiohome.com',
+    ],
 
     'allowed_origins_patterns' => [],
 
