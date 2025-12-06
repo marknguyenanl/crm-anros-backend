@@ -18,7 +18,7 @@ steps:
       - buildah login $REGISTRY -u "$REGISTRY_USER" -p "$REGISTRY_PASS"
 
       - echo "Build both images"
-      - buildah build -f docker/svc/Dockerfile --no-cache -t $REGISTRY/$IMAGE_BASE-server-php:$IMAGE_TAG .
+      - buildah build -f docker/php/Dockerfile --no-cache -t $REGISTRY/$IMAGE_BASE-server-php:$IMAGE_TAG .
       - buildah build -f docker/nginx/Dockerfile --no-cache -t $REGISTRY/$IMAGE_BASE-server-nginx:$IMAGE_TAG .
 
       - echo "Push both images"
