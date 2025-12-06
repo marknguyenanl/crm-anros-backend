@@ -7,7 +7,7 @@ steps:
     privileged: true
     environment:
       REGISTRY: harbor.anrostech.com
-      IMAGE_BASE: anros/crm-server
+      IMAGE_BASE: anros/crm
       REGISTRY_USER:
         from_secret: registry_user
       REGISTRY_PASS:
@@ -18,12 +18,12 @@ steps:
       - buildah login $REGISTRY -u "$REGISTRY_USER" -p "$REGISTRY_PASS"
 
       - echo "Build both images"
-      - buildah build -f docker/svc/Dockerfile --no-cache -t $REGISTRY/$IMAGE_BASE-php:$IMAGE_TAG .
-      - buildah build -f docker/nginx/Dockerfile --no-cache -t $REGISTRY/$IMAGE_BASE-nginx:$IMAGE_TAG .
+      - buildah build -f docker/svc/Dockerfile --no-cache -t $REGISTRY/$IMAGE_BASE-server-php:$IMAGE_TAG .
+      - buildah build -f docker/nginx/Dockerfile --no-cache -t $REGISTRY/$IMAGE_BASE-server-nginx:$IMAGE_TAG .
 
       - echo "Push both images"
-      - buildah push $REGISTRY/$IMAGE_BASE-php:$IMAGE_TAG
-      - buildah push $REGISTRY/$IMAGE_BASE-nginx:$IMAGE_TAG
+      - buildah push $REGISTRY/$IMAGE_BASE-server-php:$IMAGE_TAG
+      - buildah push $REGISTRY/$IMAGE_BASE-server-nginx:$IMAGE_TAG
 
   update_deployment_repo:
     image: alpine/git
@@ -35,8 +35,7 @@ steps:
       GIT_OWNER: marknguyenanl
       GIT_REPO: rr
       GIT_URL: github.com
-      FILES_NAME: crm-server
-      IMAGE_BASE: anros/crm-server
+      IMAGE_BASE: anros/crm
     commands:
       - |
         IMAGE_TAG=${CI_COMMIT_BRANCH}-${CI_PIPELINE_CREATED}
@@ -56,8 +55,8 @@ steps:
         git pull --rebase origin $BRANCH || true
 
         for f in /server_prod/apps/crm/*.yaml; do
-          sed -i -E 's|(php: '"$IMAGE_BASE"'-php:)[^[:space:]]+|\1'"$IMAGE_TAG"'|' "$f"
-          sed -i -E 's|(nginx: '"$IMAGE_BASE"'-nginx:)[^[:space:]]+|\1'"$IMAGE_TAG"'|' "$f"
+          sed -i -E 's|(php: '"$IMAGE_BASE"'-server-php:)[^[:space:]]+|\1'"$IMAGE_TAG"'|' "$f"
+          sed -i -E 's|(nginx: '"$IMAGE_BASE"'-server-nginx:)[^[:space:]]+|\1'"$IMAGE_TAG"'|' "$f"
         done
 
         if git diff --quiet; then
