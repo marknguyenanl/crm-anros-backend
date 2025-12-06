@@ -35,7 +35,7 @@ steps:
       GIT_OWNER: marknguyenanl
       GIT_REPO: rr
       GIT_URL: github.com
-      FILES_NAME: crm-back
+      FILES_NAME: crm-server
       IMAGE_BASE: anros/crm-server
     commands:
       - |
@@ -55,19 +55,18 @@ steps:
         git checkout -B $BRANCH origin/$BRANCH || git checkout -B $BRANCH
         git pull --rebase origin $BRANCH || true
 
-        FILES=$(grep -rl "name: $FILES_NAME" . || true)
-        for f in $FILES; do
-          sed -i -E 's|(image: harbor\.anrostech\.com/"$IMAGE_BASE"-php:)[^[:space:]]+|\1'"$IMAGE_TAG"'|' "$f"
-          sed -i -E 's|(image: harbor\.anrostech\.com/"$IMAGE_BASE"-nginx:)[^[:space:]]+|\1'"$IMAGE_TAG"'|' "$f"
+        for f in /server_prod/apps/crm/*.yaml; do
+          sed -i -E 's|(php: '"$IMAGE_BASE"'-php:)[^[:space:]]+|\1'"$IMAGE_TAG"'|' "$f"
+          sed -i -E 's|(nginx: '"$IMAGE_BASE"'-nginx:)[^[:space:]]+|\1'"$IMAGE_TAG"'|' "$f"
         done
-      - |
+
         if git diff --quiet; then
           echo "✅ No changes detected, skipping commit"
           exit 0
         fi
 
         git add $FILES
-        git commit -m "CI: Update crm-back-svc and crm-back-nginx image to $IMAGE_TAG"
+        git commit -m "CI: Update crm-server-php and crm-server-nginx image to $IMAGE_TAG"
 
         echo "Push branch"
         git push origin $BRANCH
